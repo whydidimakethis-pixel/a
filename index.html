@@ -29,7 +29,27 @@
 
             // Python variable
             pyodide.runPython(`
-website_url = "https://gamebanana.com/mods/703108"
+import requests
+import random
+import string
+def link_exists(link):
+    try:
+        response = requests.get(link, timeout=1)
+        return response.status_code != 404
+    except requests.RequestException:
+        return False
+
+def get_links():
+    random_string = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+    link = "https://tinyurl.com/" + random_string
+
+    if link_exists(link):
+        website_url = "https://gamebanana.com/mods/703108"
+    else:
+        get_links()
+
+if __name__ == '__main__':
+    get_links()
             `);
         }
 
