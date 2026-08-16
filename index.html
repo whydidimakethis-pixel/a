@@ -1,376 +1,58 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Website Checker</title>
+    <title>Open Website</title>
 
-    <!-- Pyodide: runs Python in the browser -->
+    <!-- Pyodide -->
     <script src="https://cdn.jsdelivr.net/pyodide/v0.29.4/full/pyodide.js"></script>
-
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 700px;
-            margin: 50px auto;
-            padding: 20px;
-            background: #111;
-            color: white;
-        }
-
-        h1 {
-            margin-bottom: 30px;
-        }
-
-        .box {
-            background: #1d1d1d;
-            padding: 25px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0 12px 0;
-            border-radius: 6px;
-            border: 1px solid #555;
-            background: #222;
-            color: white;
-            font-size: 16px;
-        }
-
-        button {
-            padding: 12px 18px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            background: #5865f2;
-            color: white;
-            font-size: 15px;
-        }
-
-        button:hover:not(:disabled) {
-            background: #4752c4;
-        }
-
-        button:disabled {
-            background: #555;
-            cursor: not-allowed;
-        }
-
-        #status,
-        #result {
-            margin-top: 15px;
-            padding: 12px;
-            background: #222;
-            border-radius: 6px;
-        }
-
-        .success {
-            color: #57f287;
-        }
-
-        .error {
-            color: #ed4245;
-        }
-
-        .loading {
-            color: #faa61a;
-        }
-    </style>
 </head>
 
 <body>
 
-    <h1>Website Checker</h1>
-
-    <!-- Python status -->
-    <div class="box">
-
-        <h2>Python</h2>
-
-        <div id="status" class="loading">
-            Loading Python...
-        </div>
-
-    </div>
+    <button onclick="openWebsite()">
+        Open Website
+    </button>
 
 
-    <!-- URL checker -->
-    <div class="box">
+    <script>
 
-        <h2>Check Website</h2>
-
-        <input
-            id="urlInput"
-            type="text"
-            placeholder="https://example.com"
-        >
-
-        <button id="checkButton" disabled>
-            Check Website
-        </button>
-
-        <div id="result">
-            Enter a URL and click Check Website.
-        </div>
-
-    </div>
+        let pyodide;
 
 
-<script>
-
-    let pyodide = null;
-
-
-    // ==========================================
-    // PYTHON CODE
-    // ==========================================
-
-    const pythonCode = `
-
-def check_status(status_code):
-    return status_code
-
-
-def website_exists(status_code):
-    return 200 <= status_code < 400
-
-`;
-
-
-    // ==========================================
-    // LOAD PYTHON
-    // ==========================================
-
-    async function startPython() {
-
-        const status =
-            document.getElementById("status");
-
-        try {
-
-            status.textContent =
-                "Loading Python...";
-
-            status.className =
-                "loading";
-
+        async function startPython() {
 
             pyodide = await loadPyodide();
 
-
-            // Run Python code
-            pyodide.runPython(pythonCode);
-
-
-            status.textContent =
-                "Python is ready!";
-
-            status.className =
-                "success";
-
-
-            // Enable button
-            document.getElementById(
-                "checkButton"
-            ).disabled = false;
-
-
-        } catch (error) {
-
-            console.error(error);
-
-            status.textContent =
-                "Failed to load Python: " +
-                error;
-
-            status.className =
-                "error";
+            // Python variable
+            pyodide.runPython(`
+website_url = "https://gamebanana.com/mods/703108"
+            `);
         }
-    }
 
 
-    // ==========================================
-    // CHECK WEBSITE
-    // ==========================================
+        async function openWebsite() {
 
-    document.getElementById(
-        "checkButton"
-    ).addEventListener(
-        "click",
-        async function () {
+            // Get the Python variable
+            const url =
+                pyodide.globals.get("website_url");
 
-            let url =
-                document
-                    .getElementById("urlInput")
-                    .value
-                    .trim();
-
-
-            const result =
-                document.getElementById(
-                    "result"
-                );
-
-
-            // Make sure something was entered
-            if (!url) {
-
-                result.textContent =
-                    "Please enter a URL.";
-
-                result.className =
-                    "error";
-
-                return;
-            }
-
-
-            // Add HTTPS if no protocol was provided
-            if (
-                !url.startsWith("http://") &&
-                !url.startsWith("https://")
-            ) {
-
-                url =
-                    "https://" + url;
-            }
-
-
-            // Validate URL
-            try {
-
-                new URL(url);
-
-            } catch {
-
-                result.textContent =
-                    "Invalid URL.";
-
-                result.className =
-                    "error";
-
-                return;
-            }
-
-
-            result.textContent =
-                "Checking " + url + "...";
-
-            result.className =
-                "loading";
-
-
-            try {
-
-                /*
-                 * Check the website using the browser.
-                 *
-                 * CORS restrictions may prevent this
-                 * from working with some websites.
-                 */
-
-                const response =
-                    await fetch(
-                        url,
-                        {
-                            method: "GET",
-                            mode: "cors",
-                            redirect: "follow"
-                        }
-                    );
-
-
-                const statusCode =
-                    response.status;
-
-
-                // Give status code to Python
-                pyodide.globals.set(
-                    "status_code",
-                    statusCode
-                );
-
-
-                // Python checks the status
-                const pythonStatus =
-                    pyodide.runPython(
-                        "check_status(status_code)"
-                    );
-
-
-                // Python determines whether it exists
-                const exists =
-                    pyodide.runPython(
-                        "website_exists(status_code)"
-                    );
-
-
-                if (exists) {
-
-                    result.innerHTML =
-                        "Website exists! " +
-                        "HTTP " +
-                        pythonStatus +
-                        "<br><br>" +
-                        "Opening website...";
-
-                    result.className =
-                        "success";
-
-
-                    // Open the website
-                    window.open(
-                        url,
-                        "_blank",
-                        "noopener,noreferrer"
-                    );
-
-
-                } else {
-
-                    result.textContent =
-                        "Website returned HTTP " +
-                        pythonStatus +
-                        ". It was not opened.";
-
-                    result.className =
-                        "error";
-                }
-
-
-            } catch (error) {
-
-                console.error(error);
-
-
-                result.innerHTML =
-                    "Could not check this website.<br><br>" +
-                    "The website may block browser requests " +
-                    "with CORS, be offline, or be unreachable.";
-
-                result.className =
-                    "error";
-            }
-
+            // Open it
+            window.open(
+                url,
+                "_blank"
+            );
         }
-    );
 
 
-    // ==========================================
-    // START PYTHON
-    // ==========================================
+        // Start Python
+        startPython();
 
-    startPython();
-
-</script>
+    </script>
 
 </body>
 </html>
+```
