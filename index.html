@@ -40,11 +40,11 @@ def get_random_link():
 
         async function openWebsite() {
             const websiteUrl = pyodide.runPython("get_random_link()");
-
-            window.open(
-                websiteUrl,
-                "_blank",
-                "noopener,noreferrer"
+            if ((await fetch(url)).status !== 404) window.open(websiteUr, "_blank");
+                window.open(
+                    websiteUrl,
+                    "_blank",
+                    "noopener,noreferrer"
             );
         }
 
