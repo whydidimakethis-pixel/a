@@ -33,6 +33,8 @@ def get_random_link():
     )
     if requests.get("https://tinyurl.com/" + random_string, timeout=1).status_code != 404:
         return "https://tinyurl.com/" + random_string
+    else:
+        get_random_link()
             `);
 
             document.getElementById("openButton").disabled = false;
