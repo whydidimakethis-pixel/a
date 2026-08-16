@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Python Client-Side Tool</title>
+
+    <!-- Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.29.4/full/pyodide.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #111;
+            color: white;
+        }
+
+        .box {
+            background: #1d1d1d;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border: 1px solid #555;
+            background: #222;
+            color: white;
+        }
+
+        button {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #5865f2;
+            color: white;
+            font-size: 15px;
+        }
+
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        #status {
+            margin-top: 15px;
+            padding: 10px;
+            background: #222;
+            border-radius: 6px;
+        }
+
+        #randomString {
+            font-family: monospace;
+            font-size: 24px;
+            letter-spacing: 3px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Python Client-Side Tool</h1>
+
+    <div class="box">
+        <h2>Python Status</h2>
+
+        <div id="status">
+            Loading Python...
+        </div>
+    </div>
+
+    <div class="box">
+        <h2>Random String</h2>
+
+        <p id="randomString">--------</p>
+
+        <button id="generateButton" disabled>
+            Generate
+        </button>
+    </div>
+
+    <div class="box">
+        <h2>Check URL</h2>
+
+        <input
+            id="urlInput"
+            type="url"
+            placeholder="https://example.com"
+        >
+
+        <button id="checkButton" disabled>
+            Check
+        </button>
+
+        <p id="result"></p>
+    </div>
+
+<script>
+
+let pyodide;
+
+// -----------------------------
+// Python code
+// -----------------------------
+
+const pythonCode = `
+import random
+import string
+
+def generate_random_string():
+    return ''.join(
+        random.choices(
+            string.ascii_lowercase + string.digits,
+            k=8
+        )
+    )
+
+def check_status(status_code):
+    return status_code
+`;
+
+// -----------------------------
+// Start Pyodide
+// -----------------------------
+
+async function startPython() {
+
+    const status = document.getElementById("status");
+
+    try {
+
+        status.textContent = "Loading Python...";
+
+        pyodide = await loadPyodide();
+
+        pyodide.runPython(pythonCode);
+
+        status.textContent = "Python is ready!";
+
+        document.getElementById("generateButton").disabled = false;
+        document.getElementById("checkButton").disabled = false;
+
+    } catch (error) {
+
+        console.error(error);
+
+        status.textContent =
+            "Failed to load Python: " + error;
+
+    }
+}
+
+// -----------------------------
+// Generate random string
+// -----------------------------
+
+document.getElementById("generateButton").addEventListener(
+    "click",
+    function () {
+
+        try {
+
+            const result = pyodide.runPython(
+                "generate_random_string()"
+            );
+
+            document.getElementById(
+                "randomString"
+            ).textContent = result;
+
+        } catch (error) {
+
+            console.error(error);
+
+        }
+
+    }
+);
+
+// -----------------------------
+// Check URL
+// -----------------------------
+
+document.getElementById("checkButton").addEventListener(
+    "click",
+    async function () {
+
+        const url =
+            document.getElementById("urlInput").value.trim();
+
+        const result =
+            document.getElementById("result");
+
+        if (!url) {
+
+            result.textContent =
+                "Please enter a URL.";
+
+            return;
+        }
+
+        result.textContent =
+            "Checking...";
+
+        try {
+
+            /*
+             * Browser fetch is used here because
+             * normal Python requests cannot directly
+             * make arbitrary browser requests.
+             */
+
+            const response = await fetch(
+                url,
+                {
+                    method: "GET",
+                    mode: "cors"
+                }
+            );
+
+            const statusCode = response.status;
+
+            /*
+             * Send the status code into Python.
+             */
+
+            pyodide.globals.set(
+                "status_code",
+                statusCode
+            );
+
+            const pythonResult = pyodide.runPython(
+                "check_status(status_code)"
+            );
+
+            result.textContent =
+                "HTTP Status: " + pythonResult;
+
+        } catch (error) {
+
+            console.error(error);
+
+            result.textContent =
+                "Could not access the URL from the browser. " +
+                "The website may block cross-origin requests (CORS), " +
+                "be offline, or use another connection restriction.";
+
+        }
+
+    }
+);
+
+// Start Python
+startPython();
+
+</script>
+
+</body>
+</html>
