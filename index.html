@@ -1,78 +1,64 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Open Website</title>
 
-    <!-- Pyodide -->
     <script src="https://cdn.jsdelivr.net/pyodide/v0.29.4/full/pyodide.js"></script>
 </head>
 
 <body>
 
-    <button onclick="openWebsite()">
-        Open Website
+    <button id="openButton" disabled>
+        Loading Python...
     </button>
 
-
     <script>
-
         let pyodide;
 
-
         async function startPython() {
-
             pyodide = await loadPyodide();
 
-            // Python variable
             pyodide.runPython(`
-import requests
 import random
 import string
-def link_exists(link):
-    try:
-        response = requests.get(link, timeout=1)
-        return response.status_code != 404
-    except requests.RequestException:
-        return False
 
-def get_links():
-    random_string = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
-    link = "https://tinyurl.com/" + random_string
+def get_random_link():
+    random_string = ''.join(
+        random.choices(
+            string.ascii_lowercase + string.digits,
+            k=8
+        )
+    )
 
-    if link_exists(link):
-        print(link)
-    else:
-        get_links()
-
-if __name__ == '__main__':
-    get_links()
+    return "https://tinyurl.com/" + random_string
             `);
+
+            document.getElementById("openButton").disabled = false;
+            document.getElementById("openButton").textContent = "Open Website";
         }
 
-
         async function openWebsite() {
+            const websiteUrl = pyodide.runPython("get_random_link()");
 
-            // Get the Python variable
-            const url =
-                pyodide.globals.get("website_url");
-
-            // Open it
             window.open(
-                url,
-                "_blank"
+                websiteUrl,
+                "_blank",
+                "noopener,noreferrer"
             );
         }
 
+        document
+            .getElementById("openButton")
+            .addEventListener("click", openWebsite);
 
-        // Start Python
-        startPython();
-
+        startPython().catch(error => {
+            console.error(error);
+            document.getElementById("openButton").textContent =
+                "Failed to load Python";
+        });
     </script>
 
 </body>
 </html>
-```
