@@ -23,7 +23,7 @@
             pyodide.runPython(`
 import random
 import string
-
+import timw
 def get_random_link():
     random_string = ''.join(
         random.choices(
@@ -31,6 +31,7 @@ def get_random_link():
             k=8
         )
     )
+    time.sleep(2)
     return "https://tinyurl.com/" + random_string
             `);
 
